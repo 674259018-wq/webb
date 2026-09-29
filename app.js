@@ -7,9 +7,8 @@
 // CONTRACT ADDRESS
 // ======================================================
 
-// เอา Address จาก Remix มาใส่ตรงนี้
-const CONTRACT_ADDRESS = "0x1cc90b26c8c7311f301c6b74f6254af3a503de87";
-    "ใส่_CONTRACT_ADDRESS_ตรงนี้";
+const CONTRACT_ADDRESS =
+    "0x1cc90b26c8c7311f301c6b74f6254af3a503de87";
 
 
 // ======================================================
@@ -36,10 +35,6 @@ const CONTRACT_ABI = [
 // ======================================================
 // DEFAULT ITEMS
 // ======================================================
-//
-// รายการนี้ทำให้หน้าเว็บมีของให้เลือกทันที
-// แม้ยังไม่ได้ Connect MetaMask
-//
 
 const DEFAULT_ITEMS = [
 
@@ -105,11 +100,8 @@ const DEFAULT_ITEMS = [
 // ======================================================
 
 let provider = null;
-
 let signer = null;
-
 let contract = null;
-
 let userAddress = null;
 
 
@@ -117,64 +109,50 @@ let userAddress = null;
 // PAGE LOAD
 // ======================================================
 
-window.addEventListener(
-    "load",
-    async function () {
+window.addEventListener("load", async function () {
 
-        // แสดงรายการทันที
-        renderItems(DEFAULT_ITEMS);
+    // แสดงรายการทันที
+    renderItems(DEFAULT_ITEMS);
+    updateStats(DEFAULT_ITEMS);
 
-        updateStats(DEFAULT_ITEMS);
+    // ตรวจสอบ MetaMask
+    if (typeof window.ethereum === "undefined") {
 
+        showToast(
+            "กรุณาติดตั้ง MetaMask เพื่อยืมอุปกรณ์"
+        );
 
-        // ตรวจ MetaMask
-        if (
-            typeof window.ethereum === "undefined"
-        ) {
+        return;
+    }
 
-            showToast(
-                "กรุณาติดตั้ง MetaMask เพื่อยืมอุปกรณ์"
-            );
+    // ตรวจสอบ Wallet ที่เคยเชื่อมต่อ
+    try {
 
-            return;
-        }
+        provider = new ethers.BrowserProvider(
+            window.ethereum
+        );
 
+        const accounts = await provider.send(
+            "eth_accounts",
+            []
+        );
 
-        // ถ้ามี Wallet เชื่อมอยู่แล้ว
-        try {
+        if (accounts.length > 0) {
 
-            provider =
-                new ethers.BrowserProvider(
-                    window.ethereum
-                );
-
-
-            const accounts =
-                await provider.send(
-                    "eth_accounts",
-                    []
-                );
-
-
-            if (
-                accounts.length > 0
-            ) {
-
-                await setupWallet();
-
-            }
+            await setupWallet();
 
         }
-        catch (error) {
 
-            console.log(
-                "Wallet not connected"
-            );
+    } catch (error) {
 
-        }
+        console.log(
+            "Wallet not connected:",
+            error
+        );
 
     }
-);
+
+});
 
 
 // ======================================================
@@ -183,34 +161,43 @@ window.addEventListener(
 
 async function setupWallet() {
 
-    provider =
-        new ethers.BrowserProvider(
+    try {
+
+        provider = new ethers.BrowserProvider(
             window.ethereum
         );
 
+        signer = await provider.getSigner();
 
-    signer =
-        await provider.getSigner();
+        userAddress = await signer.getAddress();
 
-
-    userAddress =
-        await signer.getAddress();
-
-
-    contract =
-        new ethers.Contract(
+        // สร้าง Contract
+        contract = new ethers.Contract(
             CONTRACT_ADDRESS,
             CONTRACT_ABI,
             signer
         );
 
+        updateWalletUI();
 
-    updateWalletUI();
+        // โหลดข้อมูล Blockchain
+        await loadBlockchainItems();
 
+        // โหลดรายการที่กำลังยืม
+        await loadMyRentals();
 
-    await loadBlockchainItems();
+    } catch (error) {
 
-    await loadMyRentals();
+        console.error(
+            "Setup wallet error:",
+            error
+        );
+
+        signer = null;
+        contract = null;
+        userAddress = null;
+
+    }
 
 }
 
@@ -221,10 +208,7 @@ async function setupWallet() {
 
 async function connectWallet() {
 
-    if (
-        typeof window.ethereum ===
-        "undefined"
-    ) {
+    if (typeof window.ethereum === "undefined") {
 
         alert(
             "กรุณาติดตั้ง MetaMask ก่อนใช้งาน"
@@ -233,43 +217,43 @@ async function connectWallet() {
         return;
     }
 
-
     try {
 
-        provider =
-            new ethers.BrowserProvider(
-                window.ethereum
-            );
+        provider = new ethers.BrowserProvider(
+            window.ethereum
+        );
 
-
+        // เปิด MetaMask
         await provider.send(
             "eth_requestAccounts",
             []
         );
 
-
+        // Setup
         await setupWallet();
 
+        if (userAddress) {
 
-        showToast(
-            "เชื่อมต่อ MetaMask สำเร็จ ✓"
+            showToast(
+                "เชื่อมต่อ MetaMask สำเร็จ ✓"
+            );
+
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Connect error:",
+            error
         );
 
-    }
-    catch (error) {
-
-        console.error(error);
-
-        if (
-            error.code === 4001
-        ) {
+        if (error.code === 4001) {
 
             showToast(
                 "คุณยกเลิกการเชื่อมต่อ Wallet"
             );
 
-        }
-        else {
+        } else {
 
             showToast(
                 "ไม่สามารถเชื่อมต่อ MetaMask"
@@ -289,16 +273,14 @@ async function connectWallet() {
 function updateWalletUI() {
 
     const button =
-        document.getElementById(
-            "connectBtn"
-        );
-
+        document.getElementById("connectBtn");
 
     const wallet =
-        document.getElementById(
-            "walletAddress"
-        );
+        document.getElementById("walletAddress");
 
+    if (!button || !wallet) {
+        return;
+    }
 
     if (!userAddress) {
 
@@ -309,26 +291,17 @@ function updateWalletUI() {
             "Wallet: Not Connected";
 
         return;
-
     }
 
-
     const shortAddress =
-        userAddress.substring(
-            0,
-            6
-        )
-        +
-        "..."
-        +
+        userAddress.substring(0, 6) +
+        "..." +
         userAddress.substring(
             userAddress.length - 4
         );
 
-
     button.innerText =
         "🟢 " + shortAddress;
-
 
     wallet.innerText =
         "Wallet: " + shortAddress;
@@ -343,47 +316,35 @@ function updateWalletUI() {
 function renderItems(items) {
 
     const container =
-        document.getElementById(
-            "itemsContainer"
+        document.getElementById("itemsContainer");
+
+    if (!container) {
+        console.error(
+            "ไม่พบ #itemsContainer"
         );
+        return;
+    }
 
-
-    if (
-        !items ||
-        items.length === 0
-    ) {
+    if (!items || items.length === 0) {
 
         container.innerHTML = `
-
             <div class="empty">
-
                 ยังไม่มีอุปกรณ์
-
             </div>
-
         `;
 
         return;
-
     }
-
 
     let html = "";
 
+    items.forEach(function (item) {
 
-    items.forEach(
-        function (item) {
+        html += createItemCard(item);
 
-            html += createItemCard(
-                item
-            );
+    });
 
-        }
-    );
-
-
-    container.innerHTML =
-        html;
+    container.innerHTML = html;
 
 }
 
@@ -399,58 +360,37 @@ function createItemCard(item) {
             ? "available"
             : "rented";
 
-
     const statusText =
         item.available
             ? "● พร้อมให้ยืม"
             : "● กำลังถูกยืม";
 
-
     return `
 
         <div class="item-card">
 
-
             <img
-
                 class="item-image"
-
                 src="${item.image}"
-
-                onerror="
-                    this.src =
-                    'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=900&q=80'
-                "
-
+                alt="${item.name}"
+                onerror="this.src='https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=900&q=80'"
             >
-
 
             <div class="item-content">
 
-
-                <div
-                    class="status ${statusClass}"
-                >
-
+                <div class="status ${statusClass}">
                     ${statusText}
-
                 </div>
-
 
                 <h3>
                     ${item.name}
                 </h3>
 
-
                 <p class="description">
-
                     ${item.description}
-
                 </p>
 
-
                 <div class="item-bottom">
-
 
                     <div class="deposit">
 
@@ -459,29 +399,15 @@ function createItemCard(item) {
                         </small>
 
                         <strong>
-
-                            ${item.deposit}
-                            ETH
-
+                            ${item.deposit} ETH
                         </strong>
 
                     </div>
 
-
                     <button
-
                         class="borrow-btn"
-
-                        ${
-                            item.available
-                                ? ""
-                                : "disabled"
-                        }
-
-                        onclick="
-                            borrowItem(${item.id})
-                        "
-
+                        ${item.available ? "" : "disabled"}
+                        onclick="borrowItem(${item.id})"
                     >
 
                         ${
@@ -492,9 +418,7 @@ function createItemCard(item) {
 
                     </button>
 
-
                 </div>
-
 
             </div>
 
@@ -514,22 +438,16 @@ async function loadBlockchainItems() {
     try {
 
         if (!contract) {
-
             return;
-
         }
-
 
         const count =
             await contract.itemCount();
 
-
         const total =
             Number(count);
 
-
         const blockchainItems = [];
-
 
         for (
             let i = 1;
@@ -540,20 +458,15 @@ async function loadBlockchainItems() {
             const item =
                 await contract.items(i);
 
-
             blockchainItems.push({
 
-                id:
-                    Number(item.id),
+                id: Number(item.id),
 
-                name:
-                    item.name,
+                name: item.name,
 
-                description:
-                    item.description,
+                description: item.description,
 
-                image:
-                    item.image,
+                image: item.image,
 
                 deposit:
                     ethers.formatEther(
@@ -567,24 +480,25 @@ async function loadBlockchainItems() {
 
         }
 
-
         renderItems(
             blockchainItems
         );
-
 
         updateStats(
             blockchainItems
         );
 
-
-    }
-    catch (error) {
+    } catch (error) {
 
         console.error(
             "Blockchain loading error:",
             error
         );
+
+        // ถ้าโหลด Blockchain ไม่ได้
+        // ยังคงแสดงรายการ Default
+        renderItems(DEFAULT_ITEMS);
+        updateStats(DEFAULT_ITEMS);
 
     }
 
@@ -597,25 +511,18 @@ async function loadBlockchainItems() {
 
 async function loadItems() {
 
-    // ถ้ายังไม่ Connect
     if (!contract) {
 
-        renderItems(
-            DEFAULT_ITEMS
-        );
+        renderItems(DEFAULT_ITEMS);
 
-        updateStats(
-            DEFAULT_ITEMS
-        );
+        updateStats(DEFAULT_ITEMS);
 
         showToast(
             "แสดงรายการอุปกรณ์แล้ว"
         );
 
         return;
-
     }
-
 
     await loadBlockchainItems();
 
@@ -631,34 +538,34 @@ function updateStats(items) {
     const total =
         items.length;
 
-
     const available =
         items.filter(
-            item =>
-                item.available
+            item => item.available
         ).length;
-
 
     const rented =
         total - available;
 
+    const totalElement =
+        document.getElementById("totalItems");
 
-    document.getElementById(
-        "totalItems"
-    ).innerText =
-        total;
+    const availableElement =
+        document.getElementById("availableItems");
 
+    const rentedElement =
+        document.getElementById("rentedItems");
 
-    document.getElementById(
-        "availableItems"
-    ).innerText =
-        available;
+    if (totalElement) {
+        totalElement.innerText = total;
+    }
 
+    if (availableElement) {
+        availableElement.innerText = available;
+    }
 
-    document.getElementById(
-        "rentedItems"
-    ).innerText =
-        rented;
+    if (rentedElement) {
+        rentedElement.innerText = rented;
+    }
 
 }
 
@@ -667,82 +574,54 @@ function updateStats(items) {
 // BORROW ITEM
 // ======================================================
 
-async function borrowItem(
-    itemId
-) {
+async function borrowItem(itemId) {
 
     try {
 
-        // ยังไม่ Connect
+        // ยังไม่ได้ Connect
         if (!signer) {
 
             showToast(
                 "กรุณา Connect MetaMask ก่อน"
             );
 
-
             await connectWallet();
 
-
             if (!signer) {
-
                 return;
-
             }
 
         }
 
-
         // อ่านข้อมูล Item
         const item =
-            await contract.items(
-                itemId
-            );
-
+            await contract.items(itemId);
 
         const deposit =
             item.deposit;
-
 
         const depositETH =
             ethers.formatEther(
                 deposit
             );
 
-
         const confirmed =
             confirm(
-
-                "ยืนยันการยืม\n\n"
-
-                +
-
-                "อุปกรณ์: "
-                +
-                item.name
-
-                +
-
-                "\nเงินมัดจำ: "
-                +
-                depositETH
-                +
+                "ยืนยันการยืม\n\n" +
+                "อุปกรณ์: " +
+                item.name +
+                "\nเงินมัดจำ: " +
+                depositETH +
                 " ETH"
-
             );
 
-
         if (!confirmed) {
-
             return;
-
         }
-
 
         showToast(
             "กำลังเปิด MetaMask..."
         );
-
 
         const tx =
             await contract.borrowItem(
@@ -752,35 +631,28 @@ async function borrowItem(
                 }
             );
 
-
         showToast(
             "กำลังรอ Blockchain..."
         );
 
-
         await tx.wait();
-
 
         showToast(
             "ยืมอุปกรณ์สำเร็จ ✓"
         );
 
-
         await loadBlockchainItems();
 
         await loadMyRentals();
 
-    }
-    catch (error) {
+    } catch (error) {
 
         console.error(
+            "Borrow error:",
             error
         );
 
-
-        handleError(
-            error
-        );
+        handleError(error);
 
     }
 
@@ -791,9 +663,7 @@ async function borrowItem(
 // RETURN ITEM
 // ======================================================
 
-async function returnItem(
-    itemId
-) {
+async function returnItem(itemId) {
 
     try {
 
@@ -803,66 +673,50 @@ async function returnItem(
 
         }
 
-
         if (!signer) {
-
             return;
-
         }
-
 
         const confirmed =
             confirm(
                 "ยืนยันการคืนอุปกรณ์?"
             );
 
-
         if (!confirmed) {
-
             return;
-
         }
-
 
         showToast(
             "กำลังคืนอุปกรณ์..."
         );
-
 
         const tx =
             await contract.returnItem(
                 itemId
             );
 
-
         showToast(
             "กำลังรอ Blockchain..."
         );
 
-
         await tx.wait();
-
 
         showToast(
             "คืนอุปกรณ์สำเร็จ และได้รับเงินมัดจำคืน ✓"
         );
 
-
         await loadBlockchainItems();
 
         await loadMyRentals();
 
-    }
-    catch (error) {
+    } catch (error) {
 
         console.error(
+            "Return error:",
             error
         );
 
-
-        handleError(
-            error
-        );
+        handleError(error);
 
     }
 
@@ -880,6 +734,9 @@ async function loadMyRentals() {
             "myRentalContainer"
         );
 
+    if (!container) {
+        return;
+    }
 
     if (
         !userAddress ||
@@ -887,31 +744,23 @@ async function loadMyRentals() {
     ) {
 
         container.innerHTML = `
-
             <div class="empty">
-
                 🦊 Connect MetaMask
                 เพื่อดูรายการยืม
-
             </div>
-
         `;
 
         return;
-
     }
-
 
     try {
 
         const count =
             await contract.itemCount();
 
-
         let html = "";
 
         let found = false;
-
 
         for (
             let i = 1;
@@ -922,54 +771,38 @@ async function loadMyRentals() {
             const rental =
                 await contract.rentals(i);
 
-
             const borrower =
                 rental.borrower;
 
-
             if (
-
-                borrower.toLowerCase()
-                ===
-                userAddress.toLowerCase()
-
-                &&
-
+                borrower.toLowerCase() ===
+                userAddress.toLowerCase() &&
                 !rental.returned
-
             ) {
 
                 found = true;
 
-
                 const item =
-                    await contract.items(
-                        i
-                    );
-
+                    await contract.items(i);
 
                 const deposit =
                     ethers.formatEther(
                         rental.deposit
                     );
 
-
                 const borrowedAt =
                     Number(
                         rental.borrowedAt
                     );
-
 
                 const date =
                     new Date(
                         borrowedAt * 1000
                     );
 
-
                 html += `
 
                     <div class="rental-card">
-
 
                         <div>
 
@@ -977,42 +810,24 @@ async function loadMyRentals() {
                                 ${item.name}
                             </h3>
 
-
                             <p>
-
                                 เงินมัดจำ:
-                                ${deposit}
-                                ETH
-
+                                ${deposit} ETH
                             </p>
 
-
                             <small>
-
                                 ยืมเมื่อ:
-                                ${date.toLocaleString(
-                                    "th-TH"
-                                )}
-
+                                ${date.toLocaleString("th-TH")}
                             </small>
 
                         </div>
 
-
                         <button
-
                             class="return-btn"
-
-                            onclick="
-                                returnItem(${i})
-                            "
-
+                            onclick="returnItem(${i})"
                         >
-
                             คืนอุปกรณ์
-
                         </button>
-
 
                     </div>
 
@@ -1022,41 +837,30 @@ async function loadMyRentals() {
 
         }
 
-
         if (!found) {
 
             html = `
-
                 <div class="empty">
-
                     ไม่มีอุปกรณ์ที่กำลังยืม
-
                 </div>
-
             `;
 
         }
 
-
         container.innerHTML =
             html;
 
-    }
-    catch (error) {
+    } catch (error) {
 
         console.error(
+            "Rental loading error:",
             error
         );
 
-
         container.innerHTML = `
-
             <div class="empty">
-
                 ไม่สามารถโหลดข้อมูลการยืมได้
-
             </div>
-
         `;
 
     }
@@ -1074,45 +878,54 @@ function handleError(error) {
         error
     );
 
-
-    if (
-        error.code === 4001
-    ) {
+    if (error.code === 4001) {
 
         showToast(
             "คุณยกเลิก Transaction"
         );
 
         return;
-
     }
 
-
-    if (
-        error.reason
-    ) {
+    if (error.reason) {
 
         showToast(
             error.reason
         );
 
         return;
-
     }
 
-
-    if (
-        error.shortMessage
-    ) {
+    if (error.shortMessage) {
 
         showToast(
             error.shortMessage
         );
 
         return;
-
     }
 
+    if (error.message) {
+
+        if (
+            error.message.includes(
+                "insufficient funds"
+            )
+        ) {
+
+            showToast(
+                "ETH ในกระเป๋าไม่พอสำหรับเงินมัดจำและค่า Gas"
+            );
+
+            return;
+        }
+
+        showToast(
+            error.message
+        );
+
+        return;
+    }
 
     showToast(
         "Transaction ไม่สำเร็จ"
@@ -1125,24 +938,22 @@ function handleError(error) {
 // TOAST
 // ======================================================
 
-function showToast(
-    message
-) {
+function showToast(message) {
 
     const toast =
-        document.getElementById(
-            "toast"
-        );
+        document.getElementById("toast");
 
+    if (!toast) {
+        alert(message);
+        return;
+    }
 
     toast.innerText =
         message;
 
-
     toast.classList.add(
         "show"
     );
-
 
     setTimeout(
         function () {
@@ -1164,11 +975,16 @@ function showToast(
 
 function goToItems() {
 
-    document.getElementById(
-        "items"
-    ).scrollIntoView({
-        behavior: "smooth"
-    });
+    const items =
+        document.getElementById("items");
+
+    if (items) {
+
+        items.scrollIntoView({
+            behavior: "smooth"
+        });
+
+    }
 
 }
 
@@ -1178,15 +994,36 @@ function goToItems() {
 // ======================================================
 
 if (
-    typeof window.ethereum !==
-    "undefined"
+    typeof window.ethereum !== "undefined"
 ) {
 
     window.ethereum.on(
         "accountsChanged",
-        function () {
+        async function (accounts) {
 
-            window.location.reload();
+            if (accounts.length === 0) {
+
+                signer = null;
+                provider = null;
+                contract = null;
+                userAddress = null;
+
+                updateWalletUI();
+
+                renderItems(DEFAULT_ITEMS);
+                updateStats(DEFAULT_ITEMS);
+
+                await loadMyRentals();
+
+                showToast(
+                    "ยกเลิกการเชื่อมต่อ MetaMask แล้ว"
+                );
+
+            } else {
+
+                await setupWallet();
+
+            }
 
         }
     );
@@ -1196,6 +1033,7 @@ if (
         "chainChanged",
         function () {
 
+            // โหลดใหม่เมื่อเปลี่ยน Network
             window.location.reload();
 
         }
