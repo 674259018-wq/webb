@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>DEPORENT | ระบบยืม-คืน</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.5/dist/ethers.umd.min.js"></script>
+
+</head>
+
+
+<body>
+
+
+    <!-- ============================= -->
+    <!-- NAVBAR -->
+    <!-- ============================= -->
+
+    <nav class="navbar">
+
+        <div class="logo">
+            <span>◈</span>
+            DEPORENT
+        </div>
+
+
+        <div class="nav-menu">
+
+            <a href="#home">
+                หน้าหลัก
+            </a>
+
+            <a href="#items">
+                อุปกรณ์
+            </a>
+
+            <a href="#my-rental">
+                การยืมของฉัน
+            </a>
+
+        </div>
+
+
+        <button
+            id="connectBtn"
+            class="connect-btn"
+            onclick="connectWallet()"
+        >
+            🦊 Connect MetaMask
+        </button>
+
+    </nav>
+
+
+
+    <!-- ============================= -->
+    <!-- HERO -->
+    <!-- ============================= -->
+
+    <section
+        id="home"
+        class="hero"
+    >
+
+        <div class="hero-content">
+
+            <div class="badge">
+                ● BLOCKCHAIN RENTAL SYSTEM
+            </div>
+
+
+            <h1>
+
+                ยืมง่าย
+
+                <span>
+                    ปลอดภัย
+                </span>
+
+                บน Blockchain
+
+            </h1>
+
+
+            <p>
+
+                ระบบตู้มัดจำยืม-คืนของ
+                เชื่อมต่อ MetaMask
+                และ Smart Contract
+                เพื่อจัดการเงินมัดจำ
+                อย่างโปร่งใส
+
+            </p>
+
+
+            <div class="hero-buttons">
+
+                <button
+                    class="primary-btn"
+                    onclick="goToItems()"
+                >
+                    ดูอุปกรณ์ →
+                </button>
+
+
+                <button
+                    class="secondary-btn"
+                    onclick="connectWallet()"
+                >
+                    🦊 Connect Wallet
+                </button>
+
+            </div>
+
+
+            <div class="stats">
+
+                <div>
+                    <strong id="totalItems">
+                        6
+                    </strong>
+
+                    <small>
+                        อุปกรณ์ทั้งหมด
+                    </small>
+                </div>
+
+
+                <div>
+                    <strong id="availableItems">
+                        6
+                    </strong>
+
+                    <small>
+                        พร้อมให้ยืม
+                    </small>
+                </div>
+
+
+                <div>
+                    <strong id="rentedItems">
+                        0
+                    </strong>
+
+                    <small>
+                        กำลังถูกยืม
+                    </small>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="hero-card">
+
+            <div class="chain-icon">
+                ⛓
+            </div>
+
+            <h2>
+                Decentralized
+            </h2>
+
+            <p>
+                ระบบจัดการการยืม
+                และเงินมัดจำ
+                ด้วย Smart Contract
+            </p>
+
+
+            <div class="online">
+                <span></span>
+                Blockchain Ready
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- ============================= -->
+    <!-- ITEMS -->
+    <!-- ============================= -->
+
+    <section
+        id="items"
+        class="section"
+    >
+
+        <div class="section-header">
+
+            <div>
+
+                <small>
+                    RENTAL ITEMS
+                </small>
+
+                <h2>
+                    เลือกอุปกรณ์ที่ต้องการยืม
+                </h2>
+
+            </div>
+
+
+            <button
+                class="refresh-btn"
+                onclick="loadItems()"
+            >
+                ↻ รีเฟรช
+            </button>
+
+        </div>
+
+
+        <div
+            id="itemsContainer"
+            class="items-grid"
+        >
+
+            <!-- JavaScript จะสร้างรายการตรงนี้ -->
+
+        </div>
+
+    </section>
+
+
+
+    <!-- ============================= -->
+    <!-- MY RENTAL -->
+    <!-- ============================= -->
+
+    <section
+        id="my-rental"
+        class="section my-rental"
+    >
+
+        <div class="section-header">
+
+            <div>
+
+                <small>
+                    MY RENTAL
+                </small>
+
+                <h2>
+                    อุปกรณ์ที่กำลังยืม
+                </h2>
+
+            </div>
+
+        </div>
+
+
+        <div id="myRentalContainer">
+
+            <div class="empty">
+
+                🦊 เชื่อมต่อ MetaMask
+                เพื่อดูรายการยืมของคุณ
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- ============================= -->
+    <!-- HOW IT WORKS -->
+    <!-- ============================= -->
+
+    <section class="section">
+
+        <div class="center-title">
+
+            <small>
+                HOW IT WORKS
+            </small>
+
+            <h2>
+                วิธีใช้งาน
+            </h2>
+
+        </div>
+
+
+        <div class="steps">
+
+
+            <div class="step">
+
+                <div class="step-number">
+                    01
+                </div>
+
+                <h3>
+                    Connect Wallet
+                </h3>
+
+                <p>
+                    เชื่อมต่อ MetaMask
+                    กับระบบ
+                </p>
+
+            </div>
+
+
+            <div class="step">
+
+                <div class="step-number">
+                    02
+                </div>
+
+                <h3>
+                    เลือกอุปกรณ์
+                </h3>
+
+                <p>
+                    เลือกอุปกรณ์
+                    ที่ต้องการยืม
+                </p>
+
+            </div>
+
+
+            <div class="step">
+
+                <div class="step-number">
+                    03
+                </div>
+
+                <h3>
+                    จ่ายเงินมัดจำ
+                </h3>
+
+                <p>
+                    ยืนยัน Transaction
+                    ผ่าน MetaMask
+                </p>
+
+            </div>
+
+
+            <div class="step">
+
+                <div class="step-number">
+                    04
+                </div>
+
+                <h3>
+                    คืนอุปกรณ์
+                </h3>
+
+                <p>
+                    คืนของแล้วรับ
+                    เงินมัดจำกลับ
+                </p>
+
+            </div>
+
+
+        </div>
+
+    </section>
+
+
+
+    <!-- ============================= -->
+    <!-- FOOTER -->
+    <!-- ============================= -->
+
+    <footer>
+
+        <div class="footer-logo">
+            ◈ DEPORENT
+        </div>
+
+        <div>
+            Decentralized Rental System
+        </div>
+
+        <div id="walletAddress">
+            Wallet: Not Connected
+        </div>
+
+    </footer>
+
+
+
+    <!-- ============================= -->
+    <!-- TOAST -->
+    <!-- ============================= -->
+
+    <div
+        id="toast"
+        class="toast"
+    ></div>
+
+
+    <script src="app.js"></script>
+
+</body>
+
+</html>
